@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ohm's Law Interactive Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .input-group input:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+        .error-message {
+            transition: opacity 0.3s ease-in-out;
+        }
+        /* Runner animation */
+        #runner {
+            animation: run-animation 4s linear infinite;
+            /* The initial path will be updated by JavaScript */
+            offset-path: path("M5,145 L295,75"); 
+            /* Prevents the icon from rotating with the curve of the path */
+            offset-rotate: 0deg; 
+        }
+        @keyframes run-animation {
+            0% { offset-distance: 0%; }
+            100% { offset-distance: 100%; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-6 md:p-8">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Ohm's Law Calculator</h1>
+            <p class="text-gray-500 mt-2">An interactive tool to understand V = IR</p>
+        </div>
+
+        <!-- Explanation Section -->
+        <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 rounded-lg mb-8">
+            <h2 class="font-bold text-lg mb-2">What is Ohm's Law?</h2>
+            <p>Ohm's Law describes the relationship between voltage (V), current (I), and resistance (R) in an electrical circuit. It states that the voltage across a conductor is directly proportional to the current flowing through it, provided all physical conditions and temperature remain constant.</p>
+            <div class="mt-4 text-center text-xl font-mono bg-white p-3 rounded-md shadow-sm">
+                Voltage (V) = Current (I) × Resistance (R)
+            </div>
+        </div>
+
+        <!-- Uphill Running Analogy Section -->
+        <div class="bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-lg mb-8">
+            <h2 class="font-bold text-lg mb-2">An Interactive Uphill Analogy</h2>
+            <p class="mb-4">Use the sliders to see how the runner's speed changes. More energy helps you go faster, but a steeper hill slows you down!</p>
+            
+            <!-- Interactive SVG Visualization -->
+            <div class="bg-white rounded-lg p-4 overflow-hidden">
+                <svg id="analogy-svg" viewBox="0 0 300 150" class="w-full">
+                    <!-- Hill Path (straight line) -->
+                    <path id="hill-path" d="M5,145 L295,75" stroke="#a3be8c" stroke-width="2" fill="none" />
+                    <!-- Runner Icon (Running Pose) -->
+                    <g id="runner" transform="scale(1.4) translate(-1, -12)">
+                        <!-- Head -->
+                        <circle cx="3" cy="-7" r="2.5" fill="#bf616a"/>
+                        <!-- Body -->
+                        <line x1="3" y1="-4.5" x2="0" y2="1" stroke="#bf616a" stroke-width="2" stroke-linecap="round"/>
+                        <!-- Arms -->
+                        <path d="M 2.5 -3 L 6 0" stroke="#bf616a" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                        <path d="M 2.5 -3 L -1 -1" stroke="#bf616a" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                        <!-- Legs -->
+                        <path d="M 0 1 L -3 5" stroke="#bf616a" stroke-width="2" stroke-linecap="round" fill="none"/>
+                        <path d="M 0 1 L 3 3 L 2 6" stroke="#bf616a" stroke-width="2" stroke-linecap="round" fill="none"/>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Sliders for control -->
+            <div class="mt-4 space-y-4">
+                <!-- Energy Slider -->
+                <div>
+                    <label for="energy-slider" class="flex justify-between text-sm font-medium text-green-900">
+                        <span>Voltage (Output Energy)</span>
+                        <span id="energy-value">50%</span>
+                    </label>
+                    <input id="energy-slider" type="range" min="1" max="100" value="50" class="w-full h-2 bg-green-200 rounded-lg appearance-none cursor-pointer">
+                </div>
+                <!-- Angle Slider -->
+                <div>
+                    <label for="angle-slider" class="flex justify-between text-sm font-medium text-green-900">
+                        <span>Resistance (Angle of Incline)</span>
+                        <span id="angle-value">10%</span>
+                    </label>
+                    <input id="angle-slider" type="range" min="1" max="100" value="10" class="w-full h-2 bg-green-200 rounded-lg appearance-none cursor-pointer">
+                </div>
+                <!-- Current Display -->
+                <div>
+                    <label class="block text-sm font-medium text-green-900">Current (Runner's Speed)</label>
+                    <div class="w-full bg-green-200 rounded-full h-2.5 mt-1">
+                        <div id="current-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 50%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calculator Section -->
+        <div>
+            <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Calculate a Value</h2>
+            <div class="flex justify-center space-x-4 md:space-x-8 mb-6" id="calculationType">
+                <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="calc" value="voltage" class="form-radio text-blue-600" checked> <span class="text-gray-700 font-medium">Voltage (V)</span></label>
+                <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="calc" value="current" class="form-radio text-blue-600"> <span class="text-gray-700 font-medium">Current (I)</span></label>
+                <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="calc" value="resistance" class="form-radio text-blue-600"> <span class="text-gray-700 font-medium">Resistance (R)</span></label>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="input-group"><label for="voltage" class="block text-sm font-medium text-gray-600 mb-1">Voltage (V)</label><input type="number" id="voltage" placeholder="e.g., 12" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></div>
+                <div class="input-group"><label for="current" class="block text-sm font-medium text-gray-600 mb-1">Current (A)</label><input type="number" id="current" placeholder="e.g., 0.5" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></div>
+                <div class="input-group"><label for="resistance" class="block text-sm font-medium text-gray-600 mb-1">Resistance (Ω)</label><input type="number" id="resistance" placeholder="e.g., 24" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></div>
+            </div>
+            <div id="errorMessage" class="error-message text-center text-red-600 font-medium mb-4 opacity-0 h-0">Please enter valid numbers in the active fields.</div>
+            <button id="calculateBtn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 transform hover:scale-105">Calculate</button>
+            <div class="mt-8 text-center"><h3 class="text-lg text-gray-500">Result</h3><p id="result" class="text-3xl font-bold text-gray-800 mt-1 h-10">---</p></div>
+        </div>
+    </div>
+
+    <script>
+        // --- Analogy Interaction Script ---
+        const energySlider = document.getElementById('energy-slider');
+        const angleSlider = document.getElementById('angle-slider');
+        const energyValue = document.getElementById('energy-value');
+        const angleValue = document.getElementById('angle-value');
+        const hillPath = document.getElementById('hill-path');
+        const runner = document.getElementById('runner');
+        const currentBar = document.getElementById('current-bar');
+
+        function updateAnalogy() {
+            const energy = parseFloat(energySlider.value);
+            const angle = parseFloat(angleSlider.value);
+            
+            // Update slider value displays
+            energyValue.textContent = `${energy.toFixed(0)}%`;
+            angleValue.textContent = `${angle.toFixed(0)}%`;
+
+            // 1. Update Hill Steepness (Angle)
+            const endY = 145 - (angle * 1.4);
+            const newPath = `M5,145 L295,${endY}`;
+            hillPath.setAttribute('d', newPath);
+            runner.style.offsetPath = `path("${newPath}")`;
+
+            // 2. Update Runner's Speed (Current) based on Energy and Angle
+            const baseDifficulty = 5;
+            const current = energy / (angle + baseDifficulty);
+            
+            // Update animation speed
+            const maxDuration = 10;
+            const minDuration = 0.5;
+            let duration = maxDuration / (current + 0.5);
+            duration = Math.max(minDuration, Math.min(maxDuration, duration));
+            runner.style.animationDuration = `${duration}s`;
+
+            // Update the current progress bar using a logarithmic scale for better visual feedback
+            const minCurrent = 1 / (100 + baseDifficulty);
+            const maxCurrent = 100 / (1 + baseDifficulty);
+            
+            const logMin = Math.log(minCurrent);
+            const logMax = Math.log(maxCurrent);
+            const logRange = logMax - logMin;
+            
+            let currentLog = Math.log(current);
+
+            if (logRange > 0) {
+                let currentPercentage = ((currentLog - logMin) / logRange) * 100;
+                currentPercentage = Math.max(0, Math.min(100, currentPercentage));
+                currentBar.style.width = `${currentPercentage}%`;
+            } else {
+                currentBar.style.width = '50%'; // Fallback
+            }
+        }
+        
+        energySlider.addEventListener('input', updateAnalogy);
+        angleSlider.addEventListener('input', updateAnalogy);
+        
+        // --- Calculator Script ---
+        const voltageInput = document.getElementById('voltage');
+        const currentInput = document.getElementById('current');
+        const resistanceInput = document.getElementById('resistance');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const resultDisplay = document.getElementById('result');
+        const calculationTypeRadios = document.querySelectorAll('input[name="calc"]');
+        const errorMessage = document.getElementById('errorMessage');
+
+        function updateInputState() {
+            const selectedValue = document.querySelector('input[name="calc"]:checked').value;
+            voltageInput.disabled = selectedValue === 'voltage';
+            currentInput.disabled = selectedValue === 'current';
+            resistanceInput.disabled = selectedValue === 'resistance';
+            voltageInput.value = '';
+            currentInput.value = '';
+            resistanceInput.value = '';
+            resultDisplay.textContent = '---';
+            hideError();
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('opacity-0', 'h-0');
+            errorMessage.classList.add('opacity-100', 'h-auto', 'mb-4');
+        }
+
+        function hideError() {
+            errorMessage.classList.add('opacity-0', 'h-0');
+            errorMessage.classList.remove('opacity-100', 'h-auto', 'mb-4');
+        }
+
+        function calculate() {
+            hideError();
+            const selectedValue = document.querySelector('input[name="calc"]:checked').value;
+            const V = parseFloat(voltageInput.value);
+            const I = parseFloat(currentInput.value);
+            const R = parseFloat(resistanceInput.value);
+            let result = null;
+            try {
+                if (selectedValue === 'voltage') {
+                    if (isNaN(I) || isNaN(R)) throw new Error("Invalid input.");
+                    result = I * R;
+                    voltageInput.value = result.toFixed(3);
+                    resultDisplay.innerHTML = `Voltage = <span class="text-blue-600">${result.toFixed(3)} V</span>`;
+                } else if (selectedValue === 'current') {
+                    if (isNaN(V) || isNaN(R)) throw new Error("Invalid input.");
+                    if (R === 0) throw new Error("Resistance cannot be zero for current calculation.");
+                    result = V / R;
+                    currentInput.value = result.toFixed(3);
+                    resultDisplay.innerHTML = `Current = <span class="text-blue-600">${result.toFixed(3)} A</span>`;
+                } else if (selectedValue === 'resistance') {
+                    if (isNaN(V) || isNaN(I)) throw new Error("Invalid input.");
+                    if (I === 0) throw new Error("Current cannot be zero for resistance calculation.");
+                    result = V / I;
+                    resistanceInput.value = result.toFixed(3);
+                    resultDisplay.innerHTML = `Resistance = <span class="text-blue-600">${result.toFixed(3)} Ω</span>`;
+                }
+            } catch (error) {
+                showError(error.message || "Please enter valid numbers in the active fields.");
+                resultDisplay.textContent = '---';
+            }
+        }
+
+        calculationTypeRadios.forEach(radio => radio.addEventListener('change', updateInputState));
+        calculateBtn.addEventListener('click', calculate);
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            updateInputState();
+            updateAnalogy(); // Initialize the analogy visualization
+        });
+    </script>
+</body>
+</html>
